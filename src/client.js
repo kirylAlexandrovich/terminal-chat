@@ -16,7 +16,12 @@ process.stdin.on('readable', () => {
 });
 
 client.on('data', (data) => {
-    console.log(data.toString().trim());
+    let stringData = data.toString().trim();
+    if (stringData.search(/#@[0-9]{5}/) !== -1) {
+        console.log('Your port is: ' + stringData.match(/[0-9]{5}/));
+        return;
+    } 
+    console.log(stringData);
 });
 
 client.on('close', () => {

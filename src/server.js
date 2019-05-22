@@ -7,7 +7,8 @@ const clients = {};
 const keys = {
     '#end': (str, client) => {
         clients[client].destroy();
-        console.log('close connection ' + client);
+        delete clients[client];
+        console.log('Сlose connection ' + client); ``
     },
     '#createChat': (client_2, creator) => {
         const interlocutor = client_2.match(/[0-9]{5}/)[0];
@@ -39,12 +40,34 @@ const keys = {
         }
         console.log(chatRooms);
     },
-    '#addToChat': (str) => {
-        let roomIndex = str.match(/[0-9]+/)[0];
+    '#addToChat': (str, client) => {
+        let roomNumber;
+        chatRooms.find((el, index) => {
+            if (el[client]) {
+                roomNumber = index;
+            }
+        });
+
+        if (typeof roomNumber !== 'number') {
+            clients[client].write(roomNumber + ', you must create a room before adding a buddy.');
+            return;
+        }
+
+        if (str.search(/[0-9]{5}/) === -1) {
+            clients[client].write('Incorrect port');
+            return;
+        }
         let human = str.match(/[0-9]{5}/)[0];
-        chatRooms[roomIndex][human] = 'interlocutor';
+        if (!clients[human]) {
+            clients[client].write(human + " client doesn't exist");
+            return;
+        }
+        chatRooms[roomNumber][human] = 'interlocutor';
+        clients[client].write(human + ' added to chat ' + roomNumber);
+        clients[human].write('You have been added to chat' + roomNumber);
+        console.log(chatRooms);
     },
-    "#exit": (str, client) => {
+    "#leaveChat": (str, client) => {
         chatRooms.find((el, index) => {
             if (el[client]) {
                 delete chatRooms[index][client];
@@ -85,7 +108,7 @@ const server = net.createServer((socket) => {
                 }
             });
         } else {
-            socket.write('Choose you interlocutor:\n' + Object.keys(clients));
+            socket.write('Choose your interlocutor:\n' + Object.keys(clients));
         }
     });
 });
@@ -93,6 +116,17 @@ const server = net.createServer((socket) => {
 server.on('connection', (client) => {
     clients[client.remotePort] = client;
     console.log('added client ' + client.remotePort);
+    client.write('#@' + client.remotePort);
 });
 
 server.listen(1337, '127.0.0.1');
+
+
+// roomNumber;
+//         if (!chatRooms[str.match(/[0-9]+/)[0]] || str.match(/[0-9]+/)[0] === 0) {
+//             clients[client].write('Incorrect room number');
+//             return;
+//         } else {
+//             roomNumber = str.match(/[0-9]{1-4}/)[0];
+//         }
+//         if (str.search(/[0-9]{1-4}/) === -1) {
